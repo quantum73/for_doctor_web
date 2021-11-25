@@ -1,6 +1,9 @@
+from copy import deepcopy
+
+
 class Database:
-    def __init__(self):
-        self.storage = {}
+    def __init__(self, copy_from=None):
+        self.storage = deepcopy(copy_from.storage) if copy_from else {}
 
     def get(self, key):
         return self.storage.get(key)
@@ -50,24 +53,22 @@ def exec_db_commands(cmd):
 
 
 def transaction():
-    transaction_struct = []
-
+    global db
+    db_snapshot = deepcopy(db)
     while True:
         row = input('>>: ').strip()
         split_row = row.split()
         if len(split_row) == 0:
             print()
         elif split_row[0] == 'BEGIN':
-            transaction_struct.insert(0, transaction())
+            transaction()
         elif split_row[0] == 'COMMIT':
             break
         elif split_row[0] == 'ROLLBACK':
-            transaction_struct.clear()
+            db = db_snapshot
             break
         else:
-            transaction_struct.append(split_row)
-
-    return transaction_struct
+            exec_db_commands(split_row)
 
 
 def main():
@@ -80,9 +81,7 @@ def main():
         elif split_row[0] == 'END':
             break
         elif split_row[0] == 'BEGIN':
-            transaction_commands = transaction()
-            for commands in transaction_commands:
-                exec_db_commands(commands)
+            transaction()
         else:
             exec_db_commands(split_row)
 
